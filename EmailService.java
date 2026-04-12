@@ -1,7 +1,4 @@
 package com.example.api.service;
-
-
-
 import org.springframework.stereotype.Service;
 
 @Service
@@ -10,3 +7,4 @@ public class EmailService {
         System.out.println("EMAIL to " + to + ": " + subject + " - " + body);
     }
 }
+
