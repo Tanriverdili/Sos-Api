@@ -1,13 +1,12 @@
 package com.example.api.entity;
-
-
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
-import lombok.*;
-
-import java.io.Serial;
-import java.io.Serializable;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
 import java.time.LocalDateTime;
+
 @Builder
 @Entity
 @Data
@@ -15,15 +14,23 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Table(name = "sos_alert_entity")
 public class SosAlertEntity {
+    @jakarta.persistence.Id
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    private Long userId;
+    @Version
+    private Long version;
     private double latitude;
     private double longitude;
     private boolean resolved;
     private LocalDateTime timestamp;
-    @Id
-    private Long id;
 
+    @ManyToOne
+    private ContactEntity contact;
 
-
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private UserEntity user;
 }
+

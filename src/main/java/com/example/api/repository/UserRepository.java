@@ -1,14 +1,12 @@
 package com.example.api.repository;
-
-
-
 import com.example.api.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
-    Optional<UserEntity> findByEmail(String email); // <- bu metodu əlavə et
+    List<UserEntity> findByEmail(String userEmail);
 }
+
+
