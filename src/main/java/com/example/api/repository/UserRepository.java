@@ -6,7 +6,12 @@ import java.util.List;
 
 @Repository
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
+<<<<<<< HEAD
     List<UserEntity> findByEmail(String userEmail);
 }
 
 
+=======
+    Optional<UserEntity> findByEmail(String email); 
+}
+>>>>>>> 3659dd1fa1086b761448b70b37797dc0465ac165
