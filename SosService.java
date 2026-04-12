@@ -46,12 +46,12 @@ public class SosService {
 
             emailService.sendEmail(
                     c.getEmail(),
-                    " SOS ALERT!",
+                    " + SOS ALERT!",
                     "Your contact sent an SOS alert!"
             );
             smsService.sendSms(
                     c.getPhone(),
-                    " SOS ALERT!"
+                    " + SOS ALERT!"
             );
             result.add("Sent to: " + c.getEmail());
         }
