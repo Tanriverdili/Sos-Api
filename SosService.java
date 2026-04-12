@@ -1,68 +1,74 @@
 package com.example.api.service;
-
-
-
-
-import com.example.api.dto.SosRequest;
 import com.example.api.entity.ContactEntity;
 import com.example.api.entity.SosAlertEntity;
 import com.example.api.repository.ContactRepository;
-
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-
+import com.example.api.repository.SosAlertRepository;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class SosService {
-
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final SimpMessagingTemplate messagingTemplate;
     private final ContactRepository contactRepository;
+    private final SosAlertRepository sosAlertRepository;
     private final EmailService emailService;
     private final SmsService smsService;
 
-    public SosService(RedisTemplate<String, Object> redisTemplate, SimpMessagingTemplate messagingTemplate, ContactRepository contactRepository, EmailService emailService, SmsService smsService) {
-        this.redisTemplate = redisTemplate;
-        this.messagingTemplate = messagingTemplate;
+    public SosService(ContactRepository contactRepository,
+                      SosAlertRepository sosAlertRepository,
+                      EmailService emailService,
+                      SmsService smsService) {
         this.contactRepository = contactRepository;
+        this.sosAlertRepository = sosAlertRepository;
         this.emailService = emailService;
         this.smsService = smsService;
     }
 
-    public void triggerSOS(SosRequest request) {
-
-        SosAlertEntity alert = SosAlertEntity.builder()
-                .userId(request.getUserId())
-                .latitude(request.getLatitude())
-                .longitude(request.getLongitude())
-                .resolved(false)
-                .timestamp(LocalDateTime.now())
-                .build();
-
-        redisTemplate.opsForValue().set("sos:" + request.getUserId(), alert, 3, TimeUnit.MINUTES);
+    public List<String> triggerSOS(Long userId) {
+        System.out.println("USER ID: " + userId);
 
 
-        List<ContactEntity> contacts = contactRepository.findByUserId(request.getUserId());
-        for (ContactEntity contact : contacts) {
-            messagingTemplate.convertAndSend("/topic/alerts/" + contact.getId(), alert);
+        List<ContactEntity> contacts =
+                contactRepository.findByUser_Id(userId);
+        System.out.println("CONTACTS FOUND: " + contacts.size());
+
+        SosAlertEntity alert = new SosAlertEntity();
+        alert.setResolved(false);
+        alert.setTimestamp(LocalDateTime.now());
+        sosAlertRepository.save(alert);
+
+
+        List<String> result = new ArrayList<>();
+
+        for (ContactEntity c : contacts) {
+            System.out.println("Sending to: " + c.getEmail());
+
+            emailService.sendEmail(
+                    c.getEmail(),
+                    "🚨 SOS ALERT!",
+                    "Your contact sent an SOS alert!"
+            );
+            smsService.sendSms(
+                    c.getPhone(),
+                    "🚨 SOS ALERT!"
+            );
+            result.add("Sent to: " + c.getEmail());
+        }
+        return result;
+    }
+    public List<SosAlertEntity> getAlertsForContact(String email) {
+
+        List<ContactEntity> contacts =
+                contactRepository.findByEmail(email);
+
+        if (contacts.isEmpty()) {
+            throw new RuntimeException("Contact tapılmadı");
         }
 
+        ContactEntity contact = contacts.get(0);
 
-        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
-            SosAlertEntity savedAlert = (SosAlertEntity) redisTemplate.opsForValue()
-                    .get("sos:" + request.getUserId());
-            if (savedAlert != null && !savedAlert.isResolved()) {
-                contacts.forEach(c -> {
-                    emailService.sendEmail(c.getEmail(), "SOS Alert!", "Your contact sent an SOS!");
-                    smsService.sendSms(c.getPhone(), "Your contact sent an SOS!");
-                });
-            }
-        }, 3, TimeUnit.MINUTES);
+        return sosAlertRepository.findByContact(contact);
     }
 }
+
